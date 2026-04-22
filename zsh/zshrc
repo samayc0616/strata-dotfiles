@@ -101,9 +101,25 @@ alias 5="cd ../../../../.."
 # Clear terminal
 alias c=clear
 
-# Launch nvim on a Slurm compute node to dodge login-node lag.
+# Launch nvim on a Slurm compute node, reusing a persistent 8h allocation so
+# repeat launches don't pay the srun cold-start cost. The allocation is named
+# "nvim-host" and is held via `salloc --no-shell`; scancel it to free the node.
 # Escape hatch: `command nvim` or `\nvim` runs on the login node.
-alias nvim='srun --pty -c 4 --mem=8G -J nvim nvim'
+nvim() {
+  local jid
+  jid=$(squeue -u "$USER" -h -o "%i" -n nvim-host | head -1)
+  if [[ -z "$jid" ]]; then
+    echo "[nvim] starting persistent nvim-host allocation (-c 4 --mem=8G, 8h)..."
+    salloc --no-shell -c 4 --mem=8G -J nvim-host --time=8:00:00 >/dev/null 2>&1
+    jid=$(squeue -u "$USER" -h -o "%i" -n nvim-host | head -1)
+    if [[ -z "$jid" ]]; then
+      echo "[nvim] allocation failed, falling back to login-node nvim"
+      command nvim "$@"
+      return
+    fi
+  fi
+  srun --jobid="$jid" --pty nvim "$@"
+}
 
 # Load fzf keybindings and completion
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
