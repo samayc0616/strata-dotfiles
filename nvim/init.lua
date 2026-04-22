@@ -226,6 +226,12 @@ vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right win
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
+-- Neutralize native `gr{char}` (replace-char-at-cursor). Without this, typing
+-- `grr` / `gra` / `grA` etc. in buffers where LSP hasn't attached falls through
+-- to vim's native `gr` command and silently replaces the cursor char.
+-- Buffer-local LSP mappings (see LspAttach) still shadow this where LSP is attached.
+vim.keymap.set({'n', 'x'}, 'gr', '<Nop>', { desc = 'disabled (native replace-char)' })
+
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 
