@@ -138,19 +138,25 @@ nvim() {
     return
   fi
   local args="${(j: :)@}"
+  # env -u TMUX stops the outer tmux's $TMUX from confusing the inner tmux on
+  # the compute node (which would otherwise refuse to nest or target the
+  # wrong socket).
+  local tmux_on_node="srun --jobid=$jid --quiet env -u TMUX tmux"
+  local tmux_pty="srun --jobid=$jid --pty env -u TMUX tmux"
 
-  if srun --jobid="$jid" --quiet tmux has-session -t nvim 2>/dev/null; then
+  if eval "$tmux_on_node has-session -t nvim" 2>/dev/null; then
     if srun --jobid="$jid" --quiet nvim --server "$sock" --remote-expr 'v:true' >/dev/null 2>&1; then
       # nvim is warm — open files in it
       [[ $# -gt 0 ]] && srun --jobid="$jid" --quiet nvim --server "$sock" --remote "$@" 2>/dev/null
     else
-      # session alive but nvim was :q'd — relaunch in the same pane
-      srun --jobid="$jid" --quiet tmux send-keys -t nvim C-u "nvim --listen $sock $args" Enter
+      # session alive but nvim was :q!'d — relaunch in the same pane
+      eval "$tmux_on_node send-keys -t nvim C-u 'nvim --listen $sock $args' Enter"
     fi
-    srun --jobid="$jid" --pty tmux attach -t nvim
+    eval "$tmux_pty attach -t nvim"
   else
-    # first time: create session; :q falls through to zsh so session survives
-    srun --jobid="$jid" --pty tmux new-session -s nvim "nvim --listen $sock $args; exec zsh"
+    # first time: create session; :q in nvim detaches (see init.lua), :q! falls
+    # through to zsh so session survives.
+    eval "$tmux_pty new-session -s nvim 'nvim --listen $sock $args; exec zsh'"
   fi
 }
 
