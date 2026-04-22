@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+# This script is launched by Alt-/ or Alt-? inside a tmux floating popup.
+# You can modify this to reflect your own shortcuts or dynamic help.
+
+cat <<'EOF'
+
+🔧 TMUX BINDINGS HELP (ALT-/ or ALT-?)
+────────────────────────────────────
+
+▶ Tabs / Windows
+  Alt-0..9        → Go to tab/window 0-9
+  Alt-t           → Open a new tab
+  Alt-r           → Rename current tab
+  Ctrl-w          → Open session manager
+
+▶ Navigation (Tabs)
+  Ctrl-h / ←      → Go to tab on the left (wrap to last if at 0)
+  Ctrl-l / →      → Go to tab on the right (wrap to 0)
+
+▶ Navigation (Panes)
+  Ctrl-j / ↓      → Go to pane below
+  Ctrl-k / ↑      → Go to pane above
+
+▶ Splits
+  Alt-h           → Horizontal split
+  Alt-v           → Vertical split
+
+▶ Resizing Panes
+  Alt + h/l       → Resize left/right
+  Alt + j/k       → Resize down/up
+  Alt + arrows    → Same as above
+
+▶ Misc
+  Alt-/ or Alt-?  → Show this help popup
+
+EOF
+
+# Wait for user to close popup
+read -n 1 -s -r -p "Press any key to close..."

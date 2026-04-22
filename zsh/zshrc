@@ -1,0 +1,350 @@
+#
+# .zshrc is sourced in interactive shells.
+# It should contain commands to set up aliases,
+# functions, options, key bindings, etc.
+#
+
+# Timezone
+export TZ="America/Los_Angeles"
+
+# Speed up shell startup
+autoload -U compinit && compinit -C  # Faster by avoiding unnecessary recompilation
+compdef eza=ls
+WORDCHARS='*?_-[]~=&;!#$%^(){}<>'
+
+# Allow tab completion in the middle of a word
+setopt COMPLETE_IN_WORD
+
+# Background processes at full speed
+setopt NO_BG_NICE
+
+# Keep command history across sessions
+HISTFILE=~/.zsh_history
+HISTSIZE=100000
+SAVEHIST=100000
+setopt INC_APPEND_HISTORY        # Immediately add to history
+setopt SHARE_HISTORY             # Share between sessions
+setopt HIST_IGNORE_DUPS          # Ignore duplicate entries
+setopt HIST_IGNORE_SPACE         # Ignore commands prefixed with a space
+setopt HIST_VERIFY               # Confirm before executing history expansion
+
+# Disable annoying terminal bell
+# setopt NO_BEEP
+
+# Automatically decide when to page a list of completions
+LISTMAX=0
+
+# Disable mail checking
+MAILCHECK=0
+
+### Added by Zinit's installer ###
+if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
+    print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
+    command mkdir -p "$HOME/.local/share/zinit" && command chmod g-rwX "$HOME/.local/share/zinit"
+    command git clone https://github.com/zdharma-continuum/zinit "$HOME/.local/share/zinit/zinit.git" && \
+        print -P "%F{33} %F{34}Installation successful.%f%b" || \
+        print -P "%F{160} The clone has failed.%f%b"
+fi
+
+source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
+autoload -Uz _zinit
+(( ${+_comps} )) && _comps[zinit]=_zinit
+
+# Load a few important annexes, without Turbo
+zinit ice depth=1
+zinit light romkatv/powerlevel10k  # Powerlevel10k theme
+zinit light-mode for \
+    zdharma-continuum/zinit-annex-as-monitor \
+    zdharma-continuum/zinit-annex-bin-gem-node \
+    zdharma-continuum/zinit-annex-patch-dl \
+    zdharma-continuum/zinit-annex-rust
+
+# Plugins for better shell experience
+zinit light zsh-users/zsh-autosuggestions  # Auto-suggest commands
+zinit light zdharma-continuum/fast-syntax-highlighting  # Syntax highlighting
+zinit light zsh-users/zsh-completions  # Extra completions
+zinit light zsh-users/zsh-history-substring-search  # Better history search
+
+# fzf - Better file and command searching
+zinit light junegunn/fzf
+zinit light unixorn/fzf-zsh-plugin  # Better integration
+zinit light changyuheng/fz  # Quickly jump to directories
+
+# Plugin for better Git experience
+zinit light wfxr/forgit  # Fuzzy finder for Git commands
+
+# Enable history substring search
+bindkey "^[[A" history-substring-search-up
+bindkey "^[[B" history-substring-search-down
+
+# fzf key bindings
+export FZF_DEFAULT_COMMAND='fd --type f'  # Use `fd` for faster searching
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"  # Use `CTRL+T` for file search
+export FZF_ALT_C_COMMAND='fd --type d'  # Use `ALT+C` to change directory
+export FZF_DEFAULT_OPTS="--height 40% --border --inline-info"
+
+# Git configuration
+export GIT_EDITOR="nvim"
+export GIT_PAGER="nvim -R"
+
+# Better navigation aliases
+alias infra="source infra/etc/infra.sh"
+alias ls='eza --icons --color=always'
+alias lrt='eza --icons --color=always -l --sort newest'
+alias ll='eza --icons --color=always -l --sort newest'
+alias 1="cd .."
+alias 2="cd ../.."
+alias 3="cd ../../.."
+alias 4="cd ../../../.."
+alias 5="cd ../../../../.."
+
+# Clear terminal
+alias c=clear
+
+# Load fzf keybindings and completion
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+# Enable selecting words like in bash
+autoload -U select-word-style
+select-word-style bash  # Change from `bash` to `normal`
+
+# Enable history search
+autoload up-line-or-beginning-search
+autoload down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+bindkey "\e[A" up-line-or-beginning-search
+bindkey "\e[B" down-line-or-beginning-search
+# Load keybinding functions
+# Kitty terminal keybindings (works over SSH)
+# Alt+hjkl are handled by tmux for window/session navigation
+# (see .tmux.conf for bindings using Unicode chars ˙∆˚¬)
+
+# Alt+number keys - handled by tmux for window switching (see .tmux.conf)
+# Kitty sends: ¡™£¢∞§¶•ªº for Alt+1234567890
+# These are intercepted by tmux before reaching zsh
+
+# Shift+arrows for word movement
+bindkey '^[[1;2D' backward-word  # Shift+Left
+bindkey '^[[1;2C' forward-word   # Shift+Right
+
+# Alt+arrows for word movement (backup)
+bindkey '^[[1;3D' backward-word  # Alt+Left
+bindkey '^[[1;3C' forward-word   # Alt+Right
+
+# Fix Home, End, and Delete keys for kitty/tmux
+bindkey '^[[H' beginning-of-line    # Home (normal)
+bindkey '^[[F' end-of-line           # End (normal)
+bindkey '^[OH' beginning-of-line    # Home (application mode)
+bindkey '^[OF' end-of-line           # End (application mode)
+bindkey '^[[3~' delete-char          # Delete
+
+# Delete previous word (ALT + Backspace, ALT + Delete, Shift + Backspace)
+bindkey '^[^?' backward-kill-word       # Alt+Backspace
+bindkey '^[[3;3~' backward-kill-word    # Alt+Delete (kitty/xterm sequence)
+bindkey '^[[127;2u' backward-kill-word  # Shift+Backspace
+bindkey '^?' backward-delete-char       # Regular Backspace
+
+# CTRL+T → File Search
+bindkey '^T' fzf-file-widget
+
+# CTRL+R → History Search
+bindkey '^R' fzf-history-widget
+
+# Ensure regular Zsh tab completion (no FZF for TAB)
+bindkey '^I' expand-or-complete  # Default Zsh tab behavior
+bindkey '^[[Z' autosuggest-accept  # SHIFT+TAB accepts auto-suggestions
+
+export TMUX_SOCKET=/home/samay/.tmux/shared.sock
+unalias z zi cd cdi 2>/dev/null
+unfunction z zi cd cdi 2>/dev/null
+eval "$(zoxide init zsh --cmd cd)"
+# Terminal settings for kitty (works over SSH)
+export TERM=xterm-256color
+# Enable OSC52 clipboard support for kitty
+export CLIPBOARD_SUPPORT=osc52
+mux() {
+  TMUX_CONF="/home/samay/.tmux.conf"
+  if [ -z "$TMUX" ]; then
+    tmux start-server
+    tmux has-session -t main 2>/dev/null
+    if [ $? -ne 0 ]; then
+      tmux -f "$TMUX_CONF" new-session -s main
+    else
+      tmux -f "$TMUX_CONF" attach-session -t main
+    fi
+  else
+    echo "You're already inside tmux"
+  fi
+}
+
+# Redirect TMPDIR into the launch-dir so Claude's temp files don't hit the home quota.
+# Per-PID subdir isolates concurrent sessions; EXIT trap cleans up on any exit.
+claude() {
+  # In $HOME, skip the .claude-tmp redirect so we don't pollute home — just use the default TMPDIR.
+  if [[ "$PWD" == "$HOME" ]]; then
+    command claude "$@"
+    return
+  fi
+  # Sweep orphan subdirs from prior crashes (PID no longer alive)
+  if [[ -d "$PWD/.claude-tmp" ]]; then
+    for d in "$PWD/.claude-tmp"/*(N); do
+      kill -0 "${d##*/}" 2>/dev/null || rm -rf "$d"
+    done
+  fi
+  (
+    local tmp="$PWD/.claude-tmp/$$"
+    mkdir -p "$tmp"
+    trap 'rm -rf "$tmp"' EXIT
+    TMPDIR="$tmp" command claude "$@"
+  )
+  rmdir "$PWD/.claude-tmp" 2>/dev/null
+}
+
+
+
+
+
+
+
+# Enhanced Python-based notify function
+# Usage: notify "command to run"
+#    or: notify --silent "command to run"
+#    or: notify --name "Custom Name" "command to run"
+function notify() {
+  ~/bin/notify "$@"
+}
+
+# Meta-N: Wrap current command with notify and execute
+# Type your command with full tab completion, then hit Alt+N to run with notification
+function __notify_and_run() {
+  local cmd="$BUFFER"
+  [[ -z "$cmd" ]] && return
+  BUFFER="notify $cmd"
+  zle accept-line
+}
+zle -N __notify_and_run
+bindkey '˜' __notify_and_run  # Alt+N / Meta+N
+
+# Alt+C: Copy current command line to clipboard (without executing)
+function __copy_cmd_to_clipboard() {
+  local cmd="$BUFFER"
+  [[ -z "$cmd" ]] && return
+  local encoded=$(printf '%s' "$cmd" | base64 | tr -d '\n')
+  if [[ -n "$TMUX" ]]; then
+    printf '\033Ptmux;\033\033]52;c;%s\033\033\\\033\\' "$encoded"
+  else
+    printf '\033]52;c;%s\a' "$encoded"
+  fi
+  zle -M "Copied: $cmd"
+}
+zle -N __copy_cmd_to_clipboard
+bindkey 'ç' __copy_cmd_to_clipboard  # Alt+C
+
+
+export PATH=~/bin:~/bin/node-v22.15.0-linux-x64/bin:$PATH
+
+# Additional Home/End key bindings for actual sequences
+bindkey '^[[1~' beginning-of-line   # Home (actual sequence)
+bindkey '^[[4~' end-of-line         # End (actual sequence)
+
+# Monokai Pro LS_COLORS (used by zsh tab-completion and ls fallback)
+# Colors: #FF6188=red, #FC9867=orange, #FFD866=yellow, #A9DC76=green, #78DCE8=cyan, #AB9DF2=purple, #727072=gray
+export LS_COLORS="\
+di=38;2;120;220;232:\
+ln=38;2;171;157;242:\
+so=38;2;255;97;136:\
+pi=38;2;252;152;103:\
+ex=38;2;169;220;118:\
+bd=38;2;255;216;102;48;2;45;42;46:\
+cd=38;2;255;216;102;48;2;45;42;46:\
+su=38;2;255;97;136;1:\
+sg=38;2;252;152;103;1:\
+tw=38;2;120;220;232;48;2;45;42;46:\
+ow=38;2;120;220;232:\
+st=38;2;120;220;232;1:\
+or=38;2;255;97;136;1;4:\
+mi=38;2;114;112;114;4:\
+*.tar=38;2;255;97;136:\
+*.tgz=38;2;255;97;136:\
+*.gz=38;2;255;97;136:\
+*.bz2=38;2;255;97;136:\
+*.xz=38;2;255;97;136:\
+*.zip=38;2;255;97;136:\
+*.zst=38;2;255;97;136:\
+*.7z=38;2;255;97;136:\
+*.rar=38;2;255;97;136:\
+*.jpg=38;2;171;157;242:\
+*.jpeg=38;2;171;157;242:\
+*.png=38;2;171;157;242:\
+*.gif=38;2;171;157;242:\
+*.bmp=38;2;171;157;242:\
+*.svg=38;2;171;157;242:\
+*.webp=38;2;171;157;242:\
+*.ico=38;2;171;157;242:\
+*.mp3=38;2;252;152;103:\
+*.flac=38;2;252;152;103:\
+*.wav=38;2;252;152;103:\
+*.ogg=38;2;252;152;103:\
+*.mp4=38;2;252;152;103:\
+*.mkv=38;2;252;152;103:\
+*.avi=38;2;252;152;103:\
+*.mov=38;2;252;152;103:\
+*.webm=38;2;252;152;103:\
+*.pdf=38;2;255;97;136:\
+*.doc=38;2;120;220;232:\
+*.docx=38;2;120;220;232:\
+*.xls=38;2;169;220;118:\
+*.xlsx=38;2;169;220;118:\
+*.py=38;2;255;216;102:\
+*.js=38;2;255;216;102:\
+*.ts=38;2;120;220;232:\
+*.cc=38;2;120;220;232:\
+*.cpp=38;2;120;220;232:\
+*.h=38;2;169;220;118:\
+*.rs=38;2;252;152;103:\
+*.go=38;2;120;220;232:\
+*.sh=38;2;169;220;118:\
+*.zsh=38;2;169;220;118:\
+*.bash=38;2;169;220;118:\
+*.md=38;2;114;112;114:\
+*.txt=38;2;252;252;250:\
+*.json=38;2;255;216;102:\
+*.yaml=38;2;255;216;102:\
+*.yml=38;2;255;216;102:\
+*.toml=38;2;255;216;102:\
+*.cfg=38;2;255;216;102:\
+*.conf=38;2;255;216;102:\
+*.log=38;2;114;112;114:\
+*.bak=38;2;114;112;114:\
+*.tmp=38;2;114;112;114:\
+*.swp=38;2;114;112;114:\
+*.o=38;2;114;112;114:\
+*.a=38;2;114;112;114:\
+*.so=38;2;171;157;242:\
+*.bzl=38;2;169;220;118:\
+*.svh=38;2;120;220;232:\
+*.sv=38;2;120;220;232:\
+*.v=38;2;120;220;232:\
+*.evcd=38;2;252;152;103:\
+*.vcd=38;2;252;152;103:\
+*.enc=38;2;255;97;136"
+
+# Wire LS_COLORS into zsh tab-completion
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+
+# EZA colors (uses its own color system, map to Monokai Pro)
+export EZA_COLORS="\
+di=38;2;120;220;232:\
+ln=38;2;171;157;242:\
+ex=38;2;169;220;118:\
+ur=38;2;255;216;102:uw=38;2;255;97;136:ux=38;2;169;220;118:\
+gr=38;2;255;216;102:gw=38;2;255;97;136:gx=38;2;169;220;118:\
+tr=38;2;255;216;102:tw=38;2;255;97;136:tx=38;2;169;220;118:\
+sn=38;2;169;220;118:sb=38;2;169;220;118:\
+da=38;2;114;112;114:\
+uu=38;2;252;152;103:gu=38;2;252;152;103:\
+un=38;2;255;97;136:gn=38;2;255;97;136"
+
+# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh

@@ -1,0 +1,33 @@
+{
+  "enabledPlugins": {
+    "clangd-lsp@claude-plugins-official": true,
+    "document-skills@anthropic-agent-skills": true
+  },
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "max",
+  "skipDangerousModePermissionPrompt": true,
+  "skipAutoPermissionPrompt": true,
+  "autoCompactWindow": 1000000,
+  "channelsEnabled": true,
+  "showThinkingSummaries": true,
+  "autoDreamEnabled": true,
+  "awaySummaryEnabled": true,
+  "tui": "fullscreen",
+  "cleanupPeriodDays": 365,
+  "feedbackSurveyRate": 0,
+  "viewMode": "verbose",
+  "showClearContextOnPlanAccept": true,
+  "skillListingBudgetFraction": 0.02,
+  "skillListingMaxDescChars": 3072,
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions"
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash $HOME/.claude/statusline-command.sh"
+  }
+}

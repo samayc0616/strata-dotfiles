@@ -1,0 +1,17 @@
+[user]
+	name = {name}
+	email = {email}
+[push]
+	default = current
+[pull]
+	rebase = true
+[init]
+	defaultBranch = main
+[diff]
+	tool = nvimdiff
+[core]
+	excludesfile = ~/.config/git/ignore
+[credential "https://github.com"]
+	helper = !/usr/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = !/usr/bin/gh auth git-credential

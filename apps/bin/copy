@@ -1,0 +1,22 @@
+#!/bin/bash
+# Copy stdin to clipboard via OSC-52 (works over SSH, in tmux, etc.)
+# Streams output in real-time, then copies everything to clipboard at the end
+tmpfile=$(mktemp)
+trap "rm -f $tmpfile" EXIT
+
+# Stream to stdout while saving to temp file
+tee "$tmpfile"
+
+# Strip trailing newline by default, use -n to keep it
+if [[ "$1" != "-n" ]]; then
+    perl -pi -e 'chomp if eof' "$tmpfile"
+fi
+
+encoded=$(base64 < "$tmpfile" | tr -d '\n')
+
+# Handle tmux - need to wrap the escape sequence
+if [[ -n "$TMUX" ]]; then
+    printf '\033Ptmux;\033\033]52;c;%s\033\033\\\033\\' "$encoded"
+else
+    printf '\033]52;c;%s\a' "$encoded"
+fi

@@ -1,0 +1,14 @@
+#!/bin/bash
+# Creates a verible.filelist with all SystemVerilog/Verilog files in a directory
+# Usage: make_verible_filelist [directory]
+#        If no directory is specified, uses current directory
+
+DIR="${1:-.}"
+
+OUTPUT="$DIR/verible.filelist"
+
+# Find all .sv, .v, .svh, .vh files recursively with relative paths
+(cd "$DIR" && find . -type f \( -name "*.sv" -o -name "*.v" -o -name "*.svh" -o -name "*.vh" \) | sort) > "$OUTPUT"
+
+COUNT=$(wc -l < "$OUTPUT")
+echo "Created $OUTPUT with $COUNT files"

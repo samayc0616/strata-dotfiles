@@ -1,0 +1,13 @@
+#!/bin/bash
+echo "Testing text styles in terminal:"
+echo ""
+echo "Normal text"
+echo -e "\e[1mBold text\e[0m"
+echo -e "\e[3mItalic text\e[0m"
+echo -e "\e[4mUnderlined text\e[0m"
+echo -e "\e[1;3mBold italic text\e[0m"
+echo -e "\e[1;4mBold underlined text\e[0m"
+echo -e "\e[3;4mItalic underlined text\e[0m"
+echo -e "\e[1;3;4mBold italic underlined text\e[0m"
+echo ""
+echo "If you can see differences in the text above, styling works!"

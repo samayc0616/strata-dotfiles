@@ -1,0 +1,87 @@
+# Starship config - two line prompt
+
+format = """
+$hostname$directory$git_branch$git_status$python$kubernetes$aws$jobs$cmd_duration
+$character"""
+
+right_format = "$time"
+add_newline = true
+
+# Show hostname when SSH'd
+[hostname]
+ssh_only = true
+format = "[$hostname]($style):"
+style = "green bold"
+
+# Full directory path
+[directory]
+style = "cyan bold"
+truncation_length = 0
+truncate_to_repo = false
+
+# Git branch
+[git_branch]
+format = " [$branch]($style)"
+style = "purple bold"
+
+# Git status - red bold when dirty
+[git_status]
+format = '[$all_status$ahead_behind]($style)'
+style = "red bold"
+conflicted = "!"
+modified = "*"
+staged = "+"
+untracked = "?"
+deleted = "x"
+ahead = "↑"
+behind = "↓"
+diverged = "↕"
+
+# Python virtualenv
+[python]
+format = ' [($virtualenv)]($style)'
+style = "yellow"
+
+# Kubernetes context
+[kubernetes]
+disabled = true
+
+# AWS profile
+[aws]
+disabled = true
+
+# Background jobs
+[jobs]
+format = ' [&$number]($style)'
+style = "blue bold"
+number_threshold = 1
+
+# Command duration (shows for commands >2s)
+[cmd_duration]
+min_time = 2000
+format = ' [$duration]($style)'
+style = "yellow"
+
+# Time on right side
+[time]
+disabled = false
+format = '[$time]($style)'
+style = "dimmed"
+time_format = "%H:%M"
+
+# Prompt character
+[character]
+success_symbol = "[❯](green bold)"
+error_symbol = "[❯](red bold)"
+
+# Disabled
+[git_metrics]
+disabled = true
+[package]
+disabled = true
+[nodejs]
+disabled = true
+[rust]
+disabled = true
+[golang]
+disabled = true
