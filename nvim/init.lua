@@ -232,17 +232,6 @@ vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper win
 -- Buffer-local LSP mappings (see LspAttach) still shadow this where LSP is attached.
 vim.keymap.set({'n', 'x'}, 'gr', '<Nop>', { desc = 'disabled (native replace-char)' })
 
--- Inside a tmux session (as spawned by the `nvim` zsh function on the persistent
--- Slurm nvim-host), remap `:q` and `:wq` to detach the tmux client instead of
--- quitting nvim. This keeps LSP servers (slang-server, etc.) alive between
--- editing sessions. `:q!` still force-quits; use `:Q` for an explicit real quit.
-if vim.env.TMUX then
-  vim.cmd([[cnoreabbrev <expr> q  (getcmdtype() == ':' && getcmdline() ==# 'q')  ? 'silent !tmux detach-client' : 'q']])
-  vim.cmd([[cnoreabbrev <expr> wq (getcmdtype() == ':' && getcmdline() ==# 'wq') ? 'w <bar> silent !tmux detach-client' : 'wq']])
-  vim.api.nvim_create_user_command('Q',  'quit!',    { desc = 'actually quit nvim (kills LSP)' })
-  vim.api.nvim_create_user_command('WQ', 'wq!',      { desc = 'write then actually quit nvim' })
-end
-
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 

@@ -9,7 +9,8 @@ Flags:
     --zsh     zshrc, p10k, zinit
     --tmux    tmux.conf, tpm
     --nvim    nvim config + binary (if missing)
-    --apps    kitty, starship, htop, git (prompted), fzf, zoxide, eza
+    --apps    kitty, htop, git (prompted), fzf, zoxide, eza, Meslo Nerd Font
+              (all installs are user-local — no sudo required)
     --bin     personal scripts -> ~/bin
     --claude  Claude Code settings + Monokai statusline
 
@@ -210,14 +211,32 @@ def install_zoxide():
 
 
 def install_eza():
+    """Download prebuilt eza binary from GitHub releases (no sudo, no cargo)."""
     if have("eza"):
         ok("eza already installed")
         return
-    if have("cargo"):
-        info("installing eza via cargo...")
-        run(["cargo", "install", "eza"])
-    else:
-        warn("eza requires cargo (Rust). install rustup: https://rustup.rs — skipping eza.")
+    import tarfile
+    import tempfile
+    url = "https://github.com/eza-community/eza/releases/latest/download/eza_x86_64-unknown-linux-gnu.tar.gz"
+    dest = HOME / ".local/bin"
+    dest.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False) as tmp:
+        tpath = Path(tmp.name)
+    try:
+        download(url, tpath)
+        with tarfile.open(tpath) as tf:
+            for member in tf.getmembers():
+                if member.isfile() and Path(member.name).name == "eza":
+                    src = tf.extractfile(member)
+                    target = dest / "eza"
+                    with open(target, "wb") as out:
+                        out.write(src.read())
+                    target.chmod(0o755)
+                    ok(f"installed eza to {target}")
+                    return
+        err("eza binary not found in archive")
+    finally:
+        tpath.unlink(missing_ok=True)
 
 
 def install_nerd_font():

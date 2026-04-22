@@ -101,64 +101,7 @@ alias 5="cd ../../../../.."
 # Clear terminal
 alias c=clear
 
-# `nvim` launches (or re-attaches to) a single long-lived nvim instance inside
-# a tmux session on a persistent Slurm compute node. The effect: slang-server
-# and other LSPs stay alive between editing sessions, so large SV projects
-# don't re-parse every time.
-#
-# Behavior:
-#   - First call: allocates nvim-host on Slurm (8h, -c 4 --mem=8G), creates a
-#     tmux session, launches nvim listening on a socket.
-#   - Later calls: attach to the same nvim. Any file args are opened inside it
-#     via `nvim --server $sock --remote`.
-#   - If you :q'd last time (session survives via `exec zsh`), the next call
-#     relaunches nvim in the same pane — seamless, but LSP is cold.
-#
-# Detach (keep LSP warm): `Ctrl-b d`
-# Quit (drops LSP, session survives): `:q`
-# Release node entirely: `scancel $(squeue -u $USER -n nvim-host -h -o %i)`
-# Escape hatch to login-node nvim: `command nvim` or `\nvim`
-_ensure_nvim_host() {
-  local jid
-  jid=$(squeue -u "$USER" -h -o "%i" -n nvim-host | head -1)
-  if [[ -z "$jid" ]]; then
-    echo "[nvim-host] starting persistent allocation (-c 4 --mem=8G, 8h)..." >&2
-    salloc --no-shell -c 4 --mem=8G -J nvim-host --time=8:00:00 >/dev/null 2>&1
-    jid=$(squeue -u "$USER" -h -o "%i" -n nvim-host | head -1)
-  fi
-  print -- "$jid"
-}
-
-nvim() {
-  local jid sock=/tmp/nvim-$USER.sock
-  jid=$(_ensure_nvim_host)
-  if [[ -z "$jid" ]]; then
-    echo "[nvim] Slurm alloc failed, falling back to login-node nvim" >&2
-    command nvim "$@"
-    return
-  fi
-  local args="${(j: :)@}"
-  # env -u TMUX stops the outer tmux's $TMUX from confusing the inner tmux on
-  # the compute node (which would otherwise refuse to nest or target the
-  # wrong socket).
-  local tmux_on_node="srun --jobid=$jid --quiet env -u TMUX tmux"
-  local tmux_pty="srun --jobid=$jid --pty env -u TMUX tmux"
-
-  if eval "$tmux_on_node has-session -t nvim" 2>/dev/null; then
-    if srun --jobid="$jid" --quiet nvim --server "$sock" --remote-expr 'v:true' >/dev/null 2>&1; then
-      # nvim is warm — open files in it
-      [[ $# -gt 0 ]] && srun --jobid="$jid" --quiet nvim --server "$sock" --remote "$@" 2>/dev/null
-    else
-      # session alive but nvim was :q!'d — relaunch in the same pane
-      eval "$tmux_on_node send-keys -t nvim C-u 'nvim --listen $sock $args' Enter"
-    fi
-    eval "$tmux_pty attach -t nvim"
-  else
-    # first time: create session; :q in nvim detaches (see init.lua), :q! falls
-    # through to zsh so session survives.
-    eval "$tmux_pty new-session -s nvim 'nvim --listen $sock $args; exec zsh'"
-  fi
-}
+# nvim: plain and simple — runs on the login node. If it's laggy, that's life.
 
 # Load fzf keybindings and completion
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
