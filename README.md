@@ -2,6 +2,8 @@
 
 My Linux dotfiles — zsh, tmux, neovim, kitty, and Claude Code — with a one-click Python installer.
 
+See [CHEATSHEET.md](./CHEATSHEET.md) for all the aliases, keybindings, and commands wired up by this config.
+
 ## install
 
 ```bash
@@ -25,7 +27,7 @@ python3 install.py --nvim --zsh
 | `--zsh`    | `~/.zshrc`, `~/.p10k.zsh`, [zinit][zinit] plugin manager                  |
 | `--tmux`   | `~/.tmux.conf`, `~/.tmux/tmux-help.sh` (`prefix + ?` popup), [tpm][tpm] (plugins install on first tmux launch via `prefix + I`) |
 | `--nvim`   | `~/.config/nvim` + the `nvim` binary if it's not on `PATH`                |
-| `--apps`   | kitty, starship, htop, git (prompts for name/email), fzf, zoxide, eza, Meslo Nerd Font, **and all `--bin` scripts** |
+| `--apps`   | kitty, htop, git (prompts for name/email), fzf, zoxide, eza, Meslo Nerd Font, **and all `--bin` scripts** |
 | `--bin`    | personal scripts (in `apps/bin/`) symlinked into `~/bin` — subset of `--apps` for lightweight installs |
 | `--claude` | Claude Code `settings.json` + Monokai Pro statusline                      |
 | `--update` | `git pull` + re-link config files for **already-installed** modules only; skips binary installs and refuses to add new modules. Errors if nothing is installed yet. |
@@ -41,7 +43,6 @@ strata-dotfiles/
 ├── apps/
 │   ├── bin/                      # helper scripts -> ~/bin
 │   ├── kitty/                    # kitty.conf (Monokai Pro)
-│   ├── starship.toml             # prompt (backup to p10k)
 │   ├── htop/                     # htoprc
 │   └── git/                      # gitconfig template + global ignore
 └── claude/                       # Claude Code settings + statusline

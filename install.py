@@ -163,7 +163,6 @@ def install_nvim_binary():
 def install_apps():
     print(f"\n{C.B}{C.PINK}» apps{C.R}")
     symlink(REPO / "apps/kitty", HOME / ".config/kitty")
-    symlink(REPO / "apps/starship.toml", HOME / ".config/starship.toml")
     symlink(REPO / "apps/htop/htoprc", HOME / ".config/htop/htoprc")
     symlink(REPO / "apps/git/gitignore_global", HOME / ".config/git/ignore")
     # apps/bin scripts are part of --apps too
@@ -172,7 +171,6 @@ def install_apps():
         return
     configure_git()
     install_fzf()
-    install_starship()
     install_zoxide()
     install_eza()
     install_nerd_font()
@@ -201,14 +199,6 @@ def install_fzf():
         run(["git", "clone", "--depth=1", "https://github.com/junegunn/fzf.git", str(fzf_dir)])
     info("running fzf install...")
     run([str(fzf_dir / "install"), "--all", "--no-bash", "--no-fish"])
-
-
-def install_starship():
-    if have("starship"):
-        ok("starship already installed")
-        return
-    info("installing starship...")
-    sh("curl -sS https://starship.rs/install.sh | sh -s -- -y")
 
 
 def install_zoxide():
@@ -287,8 +277,7 @@ INSTALL_MARKERS = {
     "zsh":    [HOME / ".zshrc", HOME / ".p10k.zsh"],
     "tmux":   [HOME / ".tmux.conf", HOME / ".tmux/tmux-help.sh"],
     "nvim":   [HOME / ".config/nvim"],
-    "apps":   [HOME / ".config/starship.toml", HOME / ".config/kitty",
-               HOME / ".config/htop/htoprc"],
+    "apps":   [HOME / ".config/kitty", HOME / ".config/htop/htoprc"],
     "bin":    [],  # see module_installed() — checks any symlink under ~/bin pointing into REPO/bin
     "claude": [HOME / ".claude/settings.json", HOME / ".claude/statusline-command.sh"],
 }
