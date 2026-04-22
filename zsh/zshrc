@@ -101,6 +101,10 @@ alias 5="cd ../../../../.."
 # Clear terminal
 alias c=clear
 
+# Launch nvim on a Slurm compute node to dodge login-node lag.
+# Escape hatch: `command nvim` or `\nvim` runs on the login node.
+alias nvim='srun --pty -c 4 --mem=8G -J nvim nvim'
+
 # Load fzf keybindings and completion
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
