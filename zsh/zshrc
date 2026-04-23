@@ -157,7 +157,7 @@ bindkey '^R' fzf-history-widget
 bindkey '^I' expand-or-complete  # Default Zsh tab behavior
 bindkey '^[[Z' autosuggest-accept  # SHIFT+TAB accepts auto-suggestions
 
-export TMUX_SOCKET=/home/samay/.tmux/shared.sock
+export TMUX_SOCKET="$HOME/.tmux/shared.sock"
 unalias z zi cd cdi 2>/dev/null
 unfunction z zi cd cdi 2>/dev/null
 eval "$(zoxide init zsh --cmd cd)"
@@ -166,7 +166,7 @@ export TERM=xterm-256color
 # Enable OSC52 clipboard support for kitty
 export CLIPBOARD_SUPPORT=osc52
 mux() {
-  TMUX_CONF="/home/samay/.tmux.conf"
+  TMUX_CONF="$HOME/.tmux.conf"
   if [ -z "$TMUX" ]; then
     tmux start-server
     tmux has-session -t main 2>/dev/null
@@ -244,7 +244,14 @@ zle -N __copy_cmd_to_clipboard
 bindkey 'ç' __copy_cmd_to_clipboard  # Alt+C
 
 
-export PATH=~/bin:~/bin/node-v22.15.0-linux-x64/bin:$PATH
+# User bin paths: ~/bin and ~/.local/bin are always added (so installer-placed
+# binaries like eza, nvim, starship land on PATH). Any ~/bin/node-*/bin dir is
+# added too if present, so node installs via nvm/tarball get picked up.
+export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
+for _node_dir in "$HOME"/bin/node-*/bin; do
+  [[ -d "$_node_dir" ]] && export PATH="$_node_dir:$PATH"
+done
+unset _node_dir
 
 # Additional Home/End key bindings for actual sequences
 bindkey '^[[1~' beginning-of-line   # Home (actual sequence)

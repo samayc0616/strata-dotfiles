@@ -59,6 +59,17 @@ def have(tool: str) -> bool:
     return shutil.which(tool) is not None
 
 
+def linux_arch() -> str:
+    """Return the normalized Linux arch string (x86_64 or aarch64)."""
+    import platform
+    m = platform.machine()
+    if m in ("x86_64", "amd64"):
+        return "x86_64"
+    if m in ("aarch64", "arm64"):
+        return "aarch64"
+    return m  # caller handles unsupported
+
+
 def run(cmd, check=True, shell=False):
     if isinstance(cmd, str) and not shell:
         cmd = cmd.split()
@@ -146,7 +157,15 @@ def install_nvim():
 
 
 def install_nvim_binary():
-    url = "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz"
+    arch = linux_arch()
+    asset = {
+        "x86_64":  "nvim-linux-x86_64.tar.gz",
+        "aarch64": "nvim-linux-arm64.tar.gz",
+    }.get(arch)
+    if asset is None:
+        warn(f"nvim binary: unsupported arch {arch} — install manually from https://github.com/neovim/neovim/releases")
+        return
+    url = f"https://github.com/neovim/neovim/releases/latest/download/{asset}"
     dest = HOME / ".local/share/nvim-release"
     dest.mkdir(parents=True, exist_ok=True)
     tarball = dest / "nvim.tar.gz"
@@ -211,19 +230,48 @@ def install_zoxide():
 
 
 def install_eza():
-    """Download prebuilt eza binary from GitHub releases (no sudo, no cargo)."""
+    """Download prebuilt eza binary from GitHub releases (no sudo, no cargo).
+
+    Uses the musl-libc build on x86_64 so it runs on ancient glibc distros.
+    Falls back to gnu if musl isn't available for the arch.
+    """
     if have("eza"):
         ok("eza already installed")
         return
     import tarfile
     import tempfile
-    url = "https://github.com/eza-community/eza/releases/latest/download/eza_x86_64-unknown-linux-gnu.tar.gz"
+
+    arch = linux_arch()
+    if arch not in ("x86_64", "aarch64"):
+        warn(f"eza: unsupported arch {arch} — skipping. See https://github.com/eza-community/eza/releases")
+        return
+
+    # musl = statically linked, no glibc dependency (best for unknown friend machines)
+    candidates = []
+    if arch == "x86_64":
+        candidates.append(f"eza_{arch}-unknown-linux-musl.tar.gz")
+    candidates.append(f"eza_{arch}-unknown-linux-gnu.tar.gz")
+
     dest = HOME / ".local/bin"
     dest.mkdir(parents=True, exist_ok=True)
+
     with tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False) as tmp:
         tpath = Path(tmp.name)
     try:
-        download(url, tpath)
+        last_err = None
+        for asset in candidates:
+            url = f"https://github.com/eza-community/eza/releases/latest/download/{asset}"
+            try:
+                download(url, tpath)
+                break
+            except Exception as e:
+                last_err = e
+                info(f"  {asset} not available, trying next...")
+                continue
+        else:
+            err(f"eza: all candidate downloads failed ({last_err})")
+            return
+
         with tarfile.open(tpath) as tf:
             for member in tf.getmembers():
                 if member.isfile() and Path(member.name).name == "eza":
@@ -234,7 +282,7 @@ def install_eza():
                     target.chmod(0o755)
                     ok(f"installed eza to {target}")
                     return
-        err("eza binary not found in archive")
+        err("eza binary not found in downloaded archive")
     finally:
         tpath.unlink(missing_ok=True)
 
