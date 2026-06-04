@@ -15,6 +15,7 @@ seven_d_reset=$(printf '%s' "$input" | jq -r '.rate_limits.seven_day.resets_at /
 total_cost=$(printf '%s' "$input" | jq -r '.cost.total_cost_usd // empty')
 lines_added=$(printf '%s' "$input" | jq -r '.cost.total_lines_added // 0')
 lines_removed=$(printf '%s' "$input" | jq -r '.cost.total_lines_removed // 0')
+effort=$(printf '%s' "$input" | jq -r '.effort.level // empty')
 
 # --- Monokai Pro (default filter) truecolor palette ---
 RESET=$'\033[0m'
@@ -57,6 +58,19 @@ fmt_relative() {
 if [ -n "$model_raw" ]; then
   short_model="${model_raw#Claude }"
   add "${BOLD}${PINK}${short_model}${RESET}"
+fi
+
+# 1b. Reasoning effort — color-coded by level; hidden if model doesn't expose it
+if [ -n "$effort" ] && [ "$effort" != "null" ]; then
+  case "$effort" in
+    low)    EFFORT_COLOR="$YELLOW"  ;;
+    medium) EFFORT_COLOR="$ORANGE"  ;;
+    high)   EFFORT_COLOR="$GREEN"   ;;
+    xhigh)  EFFORT_COLOR="$PINK"    ;;
+    max)    EFFORT_COLOR="$BLUE"    ;;
+    *)      EFFORT_COLOR="$GREY"    ;;
+  esac
+  add "${EFFORT_COLOR}effort ${effort}${RESET}"
 fi
 
 # 2. Directory — cyan full path, bold leaf (mirrors p10k: ANCHOR_BOLD on last segment only)
