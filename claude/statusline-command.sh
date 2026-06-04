@@ -28,15 +28,6 @@ ORANGE=$'\033[38;2;252;152;103m'    # #FC9867
 PURPLE=$'\033[38;2;171;157;242m'    # #AB9DF2
 GREY=$'\033[2;38;2;114;112;114m'    # #727072 dim
 
-# --- Reasoning-effort level colors (low -> max) ---
-# Distinct hues on the 256-color cube grid so they stay separable when a
-# terminal quantizes truecolor down to a limited palette.
-EFFORT_GREEN=$'\033[38;2;0;215;0m'      # low    -- green    #00D700
-EFFORT_BLUE=$'\033[38;2;0;135;255m'     # medium -- blue     #0087FF
-EFFORT_ORANGE=$'\033[38;2;255;135;0m'   # high   -- orange   #FF8700
-EFFORT_RED=$'\033[38;2;255;0;0m'        # xhigh  -- red      #FF0000
-EFFORT_MAGENTA=$'\033[38;2;255;0;255m'  # max    -- magenta  #FF00FF
-
 SEP="${GREY} │ ${RESET}"
 
 # --- Helper: append a segment ---
@@ -72,12 +63,12 @@ fi
 # 1b. Reasoning effort — color-coded by level; hidden if model doesn't expose it
 if [ -n "$effort" ] && [ "$effort" != "null" ]; then
   case "$effort" in
-    low)    EFFORT_COLOR="$EFFORT_GREEN"   ;;
-    medium) EFFORT_COLOR="$EFFORT_BLUE"    ;;
-    high)   EFFORT_COLOR="$EFFORT_ORANGE"  ;;
-    xhigh)  EFFORT_COLOR="$EFFORT_MAGENTA" ;;
-    max)    EFFORT_COLOR="$EFFORT_RED"     ;;
-    *)      EFFORT_COLOR="$GREY"           ;;
+    low)    EFFORT_COLOR="$YELLOW"  ;;
+    medium) EFFORT_COLOR="$ORANGE"  ;;
+    high)   EFFORT_COLOR="$GREEN"   ;;
+    xhigh)  EFFORT_COLOR="$PINK"    ;;
+    max)    EFFORT_COLOR="$BLUE"    ;;
+    *)      EFFORT_COLOR="$GREY"    ;;
   esac
   add "${EFFORT_COLOR}effort ${effort}${RESET}"
 fi
