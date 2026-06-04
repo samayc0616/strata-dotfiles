@@ -15,6 +15,7 @@ seven_d_reset=$(printf '%s' "$input" | jq -r '.rate_limits.seven_day.resets_at /
 total_cost=$(printf '%s' "$input" | jq -r '.cost.total_cost_usd // empty')
 lines_added=$(printf '%s' "$input" | jq -r '.cost.total_lines_added // 0')
 lines_removed=$(printf '%s' "$input" | jq -r '.cost.total_lines_removed // 0')
+effort=$(printf '%s' "$input" | jq -r '.effort.level // empty')
 
 # --- Monokai Pro (default filter) truecolor palette ---
 RESET=$'\033[0m'
@@ -26,6 +27,15 @@ GREEN=$'\033[38;2;169;220;118m'     # #A9DC76
 ORANGE=$'\033[38;2;252;152;103m'    # #FC9867
 PURPLE=$'\033[38;2;171;157;242m'    # #AB9DF2
 GREY=$'\033[2;38;2;114;112;114m'    # #727072 dim
+
+# --- Reasoning-effort level colors (low -> max) ---
+# Distinct hues on the 256-color cube grid so they stay separable when a
+# terminal quantizes truecolor down to a limited palette.
+EFFORT_GREEN=$'\033[38;2;0;215;0m'      # low    -- green    #00D700
+EFFORT_BLUE=$'\033[38;2;0;135;255m'     # medium -- blue     #0087FF
+EFFORT_ORANGE=$'\033[38;2;255;135;0m'   # high   -- orange   #FF8700
+EFFORT_RED=$'\033[38;2;255;0;0m'        # xhigh  -- red      #FF0000
+EFFORT_MAGENTA=$'\033[38;2;255;0;255m'  # max    -- magenta  #FF00FF
 
 SEP="${GREY} │ ${RESET}"
 
@@ -57,6 +67,19 @@ fmt_relative() {
 if [ -n "$model_raw" ]; then
   short_model="${model_raw#Claude }"
   add "${BOLD}${PINK}${short_model}${RESET}"
+fi
+
+# 1b. Reasoning effort — color-coded by level; hidden if model doesn't expose it
+if [ -n "$effort" ] && [ "$effort" != "null" ]; then
+  case "$effort" in
+    low)    EFFORT_COLOR="$EFFORT_GREEN"   ;;
+    medium) EFFORT_COLOR="$EFFORT_BLUE"    ;;
+    high)   EFFORT_COLOR="$EFFORT_ORANGE"  ;;
+    xhigh)  EFFORT_COLOR="$EFFORT_MAGENTA" ;;
+    max)    EFFORT_COLOR="$EFFORT_RED"     ;;
+    *)      EFFORT_COLOR="$GREY"           ;;
+  esac
+  add "${EFFORT_COLOR}effort ${effort}${RESET}"
 fi
 
 # 2. Directory — cyan full path, bold leaf (mirrors p10k: ANCHOR_BOLD on last segment only)
