@@ -327,6 +327,7 @@ def install_claude():
     print(f"\n{C.B}{C.PINK}» claude{C.R}")
     symlink(REPO / "claude/settings.json", HOME / ".claude/settings.json")
     symlink(REPO / "claude/statusline-command.sh", HOME / ".claude/statusline-command.sh")
+    symlink(REPO / "claude/load-project-skills.sh", HOME / ".claude/load-project-skills.sh")
 
 
 MODULES = {
