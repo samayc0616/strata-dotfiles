@@ -196,6 +196,7 @@ segments: model · directory (anchor bold) · git branch · context % (green→y
 | `fzf` | fuzzy picker (powers `Ctrl-T`, `Ctrl-R`, `prefix + F` in tmux) |
 | `zoxide` | smart `cd` |
 | `eza` | better `ls` |
+| `fd` | fast file finder (backs `Ctrl-T` / `Alt-C`) |
 | Meslo Nerd Font | powerline glyphs, devicons, branch ``, etc. |
 
 ---

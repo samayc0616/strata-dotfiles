@@ -9,7 +9,7 @@ Flags:
     --zsh     zshrc, p10k, zinit
     --tmux    tmux.conf, tpm
     --nvim    nvim config + binary (if missing)
-    --apps    kitty, htop, git (prompted), fzf, zoxide, eza, Meslo Nerd Font
+    --apps    kitty, htop, git (prompted), fzf, zoxide, eza, fd, Meslo Nerd Font
               (all installs are user-local — no sudo required)
     --bin     personal scripts -> ~/bin
     --claude  Claude Code settings + Monokai statusline
@@ -23,7 +23,9 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
 import urllib.request
+import zipfile
 from datetime import datetime
 from pathlib import Path
 
@@ -55,8 +57,19 @@ def err(msg):  print(f"  {C.PINK}✗{C.R} {msg}", file=sys.stderr)
 
 
 # ---------- primitives ----------
+USER_BINS = (HOME / "bin", HOME / ".local/bin")
+
+
 def have(tool: str) -> bool:
-    return shutil.which(tool) is not None
+    """True if `tool` is runnable — on PATH, or already dropped into a user bin dir.
+
+    The user bin check matters when the installer runs from a shell that predates
+    the PATH entries zshrc adds (fresh machine, first install): the binary is
+    there, it's just not visible to this process yet.
+    """
+    if shutil.which(tool) is not None:
+        return True
+    return any(os.access(d / tool, os.X_OK) and (d / tool).is_file() for d in USER_BINS)
 
 
 def linux_arch() -> str:
@@ -113,6 +126,103 @@ def download(url: str, dest: Path):
     info(f"downloading {url}")
     dest.parent.mkdir(parents=True, exist_ok=True)
     urllib.request.urlretrieve(url, dest)
+
+
+# ---------- prebuilt binaries from GitHub releases ----------
+def latest_release_tag(repo: str):
+    """Latest release tag for a GitHub repo (e.g. "v0.10.0"), or None.
+
+    Follows the /releases/latest redirect rather than asking api.github.com.
+    The unauthenticated API is rate-limited *per source IP*, so on a shared
+    login node (everyone behind one NAT) it is routinely exhausted — which is
+    exactly how the old `curl … | sh` vendor installers failed here.
+    """
+    url = f"https://github.com/{repo}/releases/latest"
+    try:
+        with urllib.request.urlopen(url, timeout=30) as resp:
+            final = resp.geturl()
+    except Exception as e:
+        warn(f"{repo}: could not resolve latest release ({e})")
+        return None
+    if "/tag/" not in final:
+        warn(f"{repo}: unexpected redirect target {final}")
+        return None
+    return final.rstrip("/").rsplit("/tag/", 1)[1]
+
+
+def extract_binary(archive: Path, name: str, dest_dir: Path) -> bool:
+    """Pull the single file named `name` out of archive into dest_dir, +x. True on success."""
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    target = dest_dir / name
+
+    def write(fileobj):
+        with open(target, "wb") as out:
+            shutil.copyfileobj(fileobj, out)
+        target.chmod(0o755)
+
+    if archive.name.endswith(".zip"):
+        with zipfile.ZipFile(archive) as zf:
+            for member in zf.infolist():
+                if not member.is_dir() and Path(member.filename).name == name:
+                    with zf.open(member) as src:
+                        write(src)
+                    return True
+        return False
+
+    with tarfile.open(archive) as tf:
+        for member in tf.getmembers():
+            if member.isfile() and Path(member.name).name == name:
+                write(tf.extractfile(member))
+                return True
+    return False
+
+
+def install_release_binary(name: str, repo: str, assets, dest: Path = None) -> bool:
+    """Install one prebuilt binary from a GitHub release into ~/.local/bin.
+
+    `assets` is an ordered list of filename templates; the first one that
+    downloads wins. Templates may use {arch}, {tag} (v1.2.3) and {version}
+    (1.2.3). Put musl builds first — they're statically linked, so they run on
+    distros whose glibc is older than the build host's.
+    """
+    if have(name):
+        ok(f"{name} already installed")
+        return True
+
+    arch = linux_arch()
+    if arch not in ("x86_64", "aarch64"):
+        warn(f"{name}: unsupported arch {arch} — install manually from "
+             f"https://github.com/{repo}/releases")
+        return False
+
+    dest = dest or (HOME / ".local/bin")
+    needs_tag = any(("{tag}" in a or "{version}" in a) for a in assets)
+    tag = latest_release_tag(repo)
+    if tag is None and needs_tag:
+        err(f"{name}: cannot determine the latest release — skipping")
+        return False
+    version = tag[1:] if (tag and tag.startswith("v")) else tag
+
+    with tempfile.NamedTemporaryFile(suffix=Path(assets[0]).suffix, delete=False) as tmp:
+        tpath = Path(tmp.name)
+    try:
+        for template in assets:
+            asset = template.format(arch=arch, tag=tag, version=version)
+            base = (f"https://github.com/{repo}/releases/download/{tag}" if tag
+                    else f"https://github.com/{repo}/releases/latest/download")
+            try:
+                download(f"{base}/{asset}", tpath)
+            except Exception:
+                info(f"  {asset} not available, trying next...")
+                continue
+            if extract_binary(tpath, name, dest):
+                ok(f"installed {name} to {dest / name}")
+                return True
+            warn(f"  {asset} contained no '{name}' binary, trying next...")
+        err(f"{name}: no usable release asset found — see https://github.com/{repo}/releases")
+        return False
+    finally:
+        tpath.unlink(missing_ok=True)
 
 
 # ---------- modules ----------
@@ -180,6 +290,23 @@ def install_nvim_binary():
     info("ensure ~/bin is on your PATH (zshrc handles this)")
 
 
+def step(label: str, fn):
+    """Run one install step in isolation. Returns the label if it failed, else None.
+
+    Each tool install is independent, so one bad download must not take the rest
+    of the module down with it (a rate-limited zoxide used to silently skip eza,
+    fd and the Nerd Font).
+    """
+    try:
+        fn()
+        return None
+    except KeyboardInterrupt:
+        raise
+    except Exception as e:
+        err(f"{label}: {e}")
+        return label
+
+
 def install_apps():
     print(f"\n{C.B}{C.PINK}» apps{C.R}")
     symlink(REPO / "apps/kitty", HOME / ".config/kitty")
@@ -189,11 +316,16 @@ def install_apps():
     install_bin()
     if UPDATE_MODE:
         return
-    configure_git()
-    install_fzf()
-    install_zoxide()
-    install_eza()
-    install_nerd_font()
+    failed = [f for f in (
+        step("git config", configure_git),
+        step("fzf", install_fzf),
+        step("zoxide", install_zoxide),
+        step("eza", install_eza),
+        step("fd", install_fd),
+        step("Meslo Nerd Font", install_nerd_font),
+    ) if f]
+    if failed:
+        raise RuntimeError(f"these app steps failed: {', '.join(failed)}")
 
 
 def configure_git():
@@ -201,9 +333,17 @@ def configure_git():
     if gitconfig.exists():
         ok(f"{gitconfig} already exists — leaving alone")
         return
+    if not sys.stdin.isatty():
+        warn("no terminal attached — skipping git identity prompt "
+             "(rerun `python3 install.py --apps` interactively)")
+        return
     print(f"\n  {C.YELLOW}git config — who are you?{C.R}")
-    name = input(f"    {C.GREY}full name:{C.R} ").strip() or "Your Name"
-    email = input(f"    {C.GREY}email:    {C.R} ").strip() or "you@example.com"
+    try:
+        name = input(f"    {C.GREY}full name:{C.R} ").strip() or "Your Name"
+        email = input(f"    {C.GREY}email:    {C.R} ").strip() or "you@example.com"
+    except EOFError:
+        warn("no input — skipping git config")
+        return
     template = (REPO / "apps/git/gitconfig.template").read_text()
     gitconfig.write_text(template.format(name=name, email=email))
     ok(f"wrote {gitconfig}")
@@ -222,76 +362,39 @@ def install_fzf():
 
 
 def install_zoxide():
-    if have("zoxide"):
-        ok("zoxide already installed")
-        return
-    info("installing zoxide...")
-    sh("curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh")
+    """zoxide (smart `cd`) — zshrc evals `zoxide init` on every shell start.
+
+    Deliberately *not* the upstream `curl … | sh` installer: that script asks
+    api.github.com for the latest version, and gets rate-limited to death on
+    shared machines. zoxide ships linux binaries as musl only.
+    """
+    install_release_binary(
+        "zoxide", "ajeetdsouza/zoxide",
+        ["zoxide-{version}-{arch}-unknown-linux-musl.tar.gz"],
+    )
 
 
 def install_eza():
-    """Download prebuilt eza binary from GitHub releases (no sudo, no cargo).
+    """eza (better `ls`) — zshrc aliases ls/ll/lrt onto it. No sudo, no cargo."""
+    install_release_binary(
+        "eza", "eza-community/eza",
+        # musl is x86_64-only upstream; the gnu fallback covers aarch64.
+        ["eza_{arch}-unknown-linux-musl.tar.gz",
+         "eza_{arch}-unknown-linux-gnu.tar.gz"],
+    )
 
-    Uses the musl-libc build on x86_64 so it runs on ancient glibc distros.
-    Falls back to gnu if musl isn't available for the arch.
-    """
-    if have("eza"):
-        ok("eza already installed")
-        return
-    import tarfile
-    import tempfile
 
-    arch = linux_arch()
-    if arch not in ("x86_64", "aarch64"):
-        warn(f"eza: unsupported arch {arch} — skipping. See https://github.com/eza-community/eza/releases")
-        return
-
-    # musl = statically linked, no glibc dependency (best for unknown friend machines)
-    candidates = []
-    if arch == "x86_64":
-        candidates.append(f"eza_{arch}-unknown-linux-musl.tar.gz")
-    candidates.append(f"eza_{arch}-unknown-linux-gnu.tar.gz")
-
-    dest = HOME / ".local/bin"
-    dest.mkdir(parents=True, exist_ok=True)
-
-    with tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False) as tmp:
-        tpath = Path(tmp.name)
-    try:
-        last_err = None
-        for asset in candidates:
-            url = f"https://github.com/eza-community/eza/releases/latest/download/{asset}"
-            try:
-                download(url, tpath)
-                break
-            except Exception as e:
-                last_err = e
-                info(f"  {asset} not available, trying next...")
-                continue
-        else:
-            err(f"eza: all candidate downloads failed ({last_err})")
-            return
-
-        with tarfile.open(tpath) as tf:
-            for member in tf.getmembers():
-                if member.isfile() and Path(member.name).name == "eza":
-                    src = tf.extractfile(member)
-                    target = dest / "eza"
-                    with open(target, "wb") as out:
-                        out.write(src.read())
-                    target.chmod(0o755)
-                    ok(f"installed eza to {target}")
-                    return
-        err("eza binary not found in downloaded archive")
-    finally:
-        tpath.unlink(missing_ok=True)
+def install_fd():
+    """fd — backs FZF_DEFAULT_COMMAND / FZF_ALT_C_COMMAND, i.e. Ctrl-T and Alt-C."""
+    install_release_binary(
+        "fd", "sharkdp/fd",
+        ["fd-{tag}-{arch}-unknown-linux-musl.tar.gz",
+         "fd-{tag}-{arch}-unknown-linux-gnu.tar.gz"],
+    )
 
 
 def install_nerd_font():
     """Install MesloLGLDZ Nerd Font (needed for branch glyph, devicons, etc.)."""
-    import tempfile
-    import zipfile
-
     font_dir = HOME / ".local/share/fonts/MesloNerdFont"
     if font_dir.exists() and any(font_dir.glob("*.ttf")):
         ok("Meslo Nerd Font already installed")

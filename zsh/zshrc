@@ -7,6 +7,19 @@
 # Timezone
 export TZ="America/Los_Angeles"
 
+# User bin paths: ~/bin and ~/.local/bin are always added (so installer-placed
+# binaries like eza, zoxide, fd, nvim land on PATH). Any ~/bin/node-*/bin dir is
+# added too if present, so node installs via nvm/tarball get picked up.
+# Set this early — everything below that probes for a tool needs the final PATH.
+export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
+# (N) = null glob. Without it, a machine with no ~/bin/node-* dir hits
+# "no matches found", which aborts the *rest of this file* — silently killing
+# LS_COLORS, EZA_COLORS and the p10k config that follow.
+for _node_dir in "$HOME"/bin/node-*/bin(N); do
+  [[ -d "$_node_dir" ]] && export PATH="$_node_dir:$PATH"
+done
+unset _node_dir
+
 # Speed up shell startup
 autoload -U compinit && compinit -C  # Faster by avoiding unnecessary recompilation
 compdef eza=ls
@@ -77,10 +90,19 @@ zinit light wfxr/forgit  # Fuzzy finder for Git commands
 bindkey "^[[A" history-substring-search-up
 bindkey "^[[B" history-substring-search-down
 
-# fzf key bindings
-export FZF_DEFAULT_COMMAND='fd --type f'  # Use `fd` for faster searching
+# fzf key bindings — fd is fastest, but degrade gracefully so CTRL+T / ALT+C
+# still work on a machine where `--apps` hasn't run (or fd install failed).
+if (( $+commands[fd] )); then
+  export FZF_DEFAULT_COMMAND='fd --type f'  # Use `fd` for faster searching
+  export FZF_ALT_C_COMMAND='fd --type d'    # Use `ALT+C` to change directory
+elif (( $+commands[rg] )); then
+  export FZF_DEFAULT_COMMAND='rg --files --hidden --glob "!.git/*"'
+  export FZF_ALT_C_COMMAND='find . -type d -not -path "*/.git/*"'
+else
+  export FZF_DEFAULT_COMMAND='find . -type f -not -path "*/.git/*"'
+  export FZF_ALT_C_COMMAND='find . -type d -not -path "*/.git/*"'
+fi
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"  # Use `CTRL+T` for file search
-export FZF_ALT_C_COMMAND='fd --type d'  # Use `ALT+C` to change directory
 export FZF_DEFAULT_OPTS="--height 40% --border --inline-info"
 
 # Git configuration
@@ -89,9 +111,17 @@ export GIT_PAGER="nvim -R"
 
 # Better navigation aliases
 alias infra="source infra/etc/infra.sh"
-alias ls='eza --icons --color=always'
-alias lrt='eza --icons --color=always -l --sort newest'
-alias ll='eza --icons --color=always -l --sort newest'
+# eza if it's installed, coreutils ls otherwise — an unconditional alias meant a
+# missing eza broke plain `ls` with "command not found".
+if (( $+commands[eza] )); then
+  alias ls='eza --icons --color=always'
+  alias lrt='eza --icons --color=always -l --sort newest'
+  alias ll='eza --icons --color=always -l --sort newest'
+else
+  alias ls='ls --color=auto'
+  alias lrt='ls --color=auto -lrth'
+  alias ll='ls --color=auto -lh'
+fi
 alias 1="cd .."
 alias 2="cd ../.."
 alias 3="cd ../../.."
@@ -160,7 +190,10 @@ bindkey '^[[Z' autosuggest-accept  # SHIFT+TAB accepts auto-suggestions
 export TMUX_SOCKET="$HOME/.tmux/shared.sock"
 unalias z zi cd cdi 2>/dev/null
 unfunction z zi cd cdi 2>/dev/null
-eval "$(zoxide init zsh --cmd cd)"
+# Guarded: without zoxide installed this eval errored on every shell start.
+if (( $+commands[zoxide] )); then
+  eval "$(zoxide init zsh --cmd cd)"
+fi
 # Terminal settings for kitty (works over SSH)
 export TERM=xterm-256color
 # Enable OSC52 clipboard support for kitty
@@ -244,14 +277,7 @@ zle -N __copy_cmd_to_clipboard
 bindkey 'ç' __copy_cmd_to_clipboard  # Alt+C
 
 
-# User bin paths: ~/bin and ~/.local/bin are always added (so installer-placed
-# binaries like eza, nvim, starship land on PATH). Any ~/bin/node-*/bin dir is
-# added too if present, so node installs via nvm/tarball get picked up.
-export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
-for _node_dir in "$HOME"/bin/node-*/bin; do
-  [[ -d "$_node_dir" ]] && export PATH="$_node_dir:$PATH"
-done
-unset _node_dir
+# (PATH setup lives at the top of this file — tool probes below it need it set.)
 
 # Additional Home/End key bindings for actual sequences
 bindkey '^[[1~' beginning-of-line   # Home (actual sequence)

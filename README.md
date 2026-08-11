@@ -27,7 +27,7 @@ python3 install.py --nvim --zsh
 | `--zsh`    | `~/.zshrc`, `~/.p10k.zsh`, [zinit][zinit] plugin manager                  |
 | `--tmux`   | `~/.tmux.conf`, `~/.tmux/tmux-help.sh` (`prefix + ?` popup), [tpm][tpm] (plugins install on first tmux launch via `prefix + I`) |
 | `--nvim`   | `~/.config/nvim` + the `nvim` binary if it's not on `PATH`                |
-| `--apps`   | kitty, htop, git (prompts for name/email), fzf, zoxide, eza, Meslo Nerd Font, **and all `--bin` scripts** |
+| `--apps`   | kitty, htop, git (prompts for name/email), fzf, zoxide, eza, fd, Meslo Nerd Font, **and all `--bin` scripts** |
 | `--bin`    | personal scripts (in `apps/bin/`) symlinked into `~/bin` — subset of `--apps` for lightweight installs |
 | `--claude` | Claude Code `settings.json` + Monokai Pro statusline                      |
 | `--update` | `git pull` + re-link config files for **already-installed** modules only; skips binary installs and refuses to add new modules. Errors if nothing is installed yet. |
@@ -61,9 +61,14 @@ Opus 4.7 │ ~/repo/src │  branch │ ctx 32% │ 5h 3% · in 4h 34m │ 7d 22
 
 ## requirements
 
-- Linux (tested on RHEL 9 and Ubuntu 22), x86_64
+- Linux (tested on RHEL 9 and Ubuntu 22), x86_64 or aarch64
 - `git`, `curl`, `python3` (≥ 3.8) — anything else is installed by the installer
-- Optional: `cargo` for `eza` (installer skips with a note if absent)
+
+CLI tools (`zoxide`, `eza`, `fd`) are fetched as prebuilt binaries straight from
+GitHub releases into `~/.local/bin` — no sudo, no cargo, and no calls to
+`api.github.com` (its unauthenticated rate limit is per-IP, so it's usually
+exhausted on shared login nodes). musl builds are preferred so they run on old
+glibc. If one tool fails to download, the rest still install.
 
 ## re-running / updating
 
