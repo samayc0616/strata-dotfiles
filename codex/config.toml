@@ -16,6 +16,7 @@ unified_exec = true
 
 [tui]
 notifications = true
+theme = "monokai-extended-origin"
 status_line_use_colors = true
 status_line = [
   "model-with-reasoning",
