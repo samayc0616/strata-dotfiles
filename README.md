@@ -1,6 +1,6 @@
 # strata-dotfiles
 
-My Linux dotfiles — zsh, tmux, neovim, kitty, and Claude Code — with a one-click Python installer.
+My Linux dotfiles — zsh, tmux, neovim, kitty, Claude Code, and Codex — with a one-click Python installer.
 
 See [CHEATSHEET.md](./CHEATSHEET.md) for all the aliases, keybindings, and commands wired up by this config.
 
@@ -30,6 +30,7 @@ python3 install.py --nvim --zsh
 | `--apps`   | kitty, htop, git (prompts for name/email), fzf, zoxide, eza, fd, Meslo Nerd Font, **and all `--bin` scripts** |
 | `--bin`    | personal scripts (in `apps/bin/`) symlinked into `~/bin` — subset of `--apps` for lightweight installs |
 | `--claude` | Claude Code `settings.json` + Monokai Pro statusline                      |
+| `--codex`  | Codex agentic defaults + native metric-rich status line                   |
 | `--update` | `git pull` + re-link config files for **already-installed** modules only; skips binary installs and refuses to add new modules. Errors if nothing is installed yet. |
 
 ## what's in here
@@ -45,7 +46,8 @@ strata-dotfiles/
 │   ├── kitty/                    # kitty.conf (Monokai Pro)
 │   ├── htop/                     # htoprc
 │   └── git/                      # gitconfig template + global ignore
-└── claude/                       # Claude Code settings + statusline
+├── claude/                       # Claude Code settings + statusline
+└── codex/                        # Codex config + native status line
 ```
 
 ## statusline preview
@@ -58,6 +60,17 @@ Opus 4.7 │ ~/repo/src │  branch │ ctx 32% │ 5h 3% · in 4h 34m │ 7d 22
 
 - model · directory (anchor bold) · git branch · context % (threshold colored) · 5h rate limit + reset countdown · 7d rate limit · session cost · diff stats
 - segments auto-hide when their data is absent (no cost yet, no rate limit pre-first-call, etc.)
+
+Codex uses its native status line with the same metric sequence:
+
+```
+gpt-5.6-sol xhigh │ ~/repo/src │  branch │ 32% used │ 5h 3% │ weekly 22% │ $26.58 │ +142 -37
+```
+
+The Codex config also enables multi-agent execution and runs with `approval_policy = "never"`
+and `sandbox_mode = "danger-full-access"`. This is equivalent to bypassing permission prompts:
+Codex commands can access the machine and network without asking, so only install this module if
+that is the behavior you want.
 
 ## requirements
 

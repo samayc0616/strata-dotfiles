@@ -13,6 +13,7 @@ Flags:
               (all installs are user-local — no sudo required)
     --bin     personal scripts -> ~/bin
     --claude  Claude Code settings + Monokai statusline
+    --codex   Codex agentic defaults + native status line
 
 Anything that would be overwritten is moved to ~/.dotfiles-backup/<timestamp>/ first.
 """
@@ -433,6 +434,11 @@ def install_claude():
     symlink(REPO / "claude/load-project-skills.sh", HOME / ".claude/load-project-skills.sh")
 
 
+def install_codex():
+    print(f"\n{C.B}{C.PINK}» codex{C.R}")
+    symlink(REPO / "codex/config.toml", HOME / ".codex/config.toml")
+
+
 MODULES = {
     "zsh":    install_zsh,
     "tmux":   install_tmux,
@@ -440,6 +446,7 @@ MODULES = {
     "apps":   install_apps,
     "bin":    install_bin,
     "claude": install_claude,
+    "codex":  install_codex,
 }
 
 # Canonical "is this module installed?" paths — at least one must be a symlink
@@ -451,6 +458,7 @@ INSTALL_MARKERS = {
     "apps":   [HOME / ".config/kitty", HOME / ".config/htop/htoprc"],
     "bin":    [],  # see module_installed() — checks any symlink under ~/bin pointing into REPO/bin
     "claude": [HOME / ".claude/settings.json", HOME / ".claude/statusline-command.sh"],
+    "codex":  [HOME / ".codex/config.toml"],
 }
 
 
