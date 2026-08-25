@@ -1,0 +1,30 @@
+# Codex CLI — autonomous defaults with a metric-rich native status line.
+# WARNING: these permission settings allow commands to run without approval or sandboxing.
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+
+# Match the high-reasoning, agentic Claude setup without pinning a model version.
+model_reasoning_effort = "xhigh"
+personality = "pragmatic"
+
+[agents]
+enabled = true
+
+[features]
+unified_exec = true
+
+[tui]
+notifications = true
+theme = "monokai-extended-origin"
+status_line_use_colors = true
+status_line = [
+  "model-with-reasoning",
+  "current-dir",
+  "git-branch",
+  "context-used",
+  "five-hour-limit",
+  "weekly-limit",
+  "estimated-thread-cost",
+  "branch-changes",
+]
